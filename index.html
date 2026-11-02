@@ -112,6 +112,23 @@ html,body{touch-action:manipulation;-webkit-user-select:none;user-select:none;-w
   #lookBtn{bottom:auto!important;right:auto!important;left:50%!important;transform:translateX(-50%)!important;top:calc(18px + env(safe-area-inset-top,0px))!important}
 }
 #loading.err{display:flex!important;z-index:20}
+body.songmenu #scenePick{opacity:0!important;pointer-events:none!important}
+#howto{position:absolute;z-index:10;margin:0;max-width:min(340px,calc(100vw - 32px));font-family:var(--pixel);font-size:11px;line-height:1.9;color:#f3e3b8;text-align:left;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.8);opacity:0;pointer-events:none;transition:opacity .35s ease}
+#howto b{color:#ffd84a;font-weight:normal}
+#howto .k{display:inline}#howto .t{display:none}
+@media (hover:none),(max-aspect-ratio:9/10){#howto .k{display:none}#howto .t{display:inline}}
+@media (max-aspect-ratio:9/10){#howto{font-size:10px;max-width:min(330px,calc(100vw - 32px))}}
+body.title:not(.songmenu) #howto.ready{opacity:1}
+#speedCtl{position:absolute;z-index:11;left:50%;bottom:calc(6% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:12px;font-family:var(--pixel);color:#ffd84a;text-shadow:0 2px 0 #7a5208;opacity:0;pointer-events:none;transition:opacity .35s ease}
+body.menuopen #speedCtl{opacity:1;pointer-events:auto}
+#speedCtl label{font-size:11px;letter-spacing:.06em;display:flex;gap:12px;align-items:baseline}
+#speedCtl output{color:#fff3c4;min-width:4ch}
+#speedR{-webkit-appearance:none;appearance:none;width:min(300px,70vw);height:28px;background:transparent;cursor:pointer;touch-action:none}
+#speedR::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(#ffe78a,#c9921a);box-shadow:0 3px 0 #5e3c06,0 0 12px rgba(255,216,74,.25)}
+#speedR::-moz-range-track{height:8px;border-radius:4px;background:linear-gradient(#ffe78a,#c9921a);box-shadow:0 3px 0 #5e3c06}
+#speedR::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-8px;border-radius:50%;background:#fff3c4;border:3px solid #a8700e;box-shadow:0 3px 0 #5e3c06}
+#speedR::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff3c4;border:3px solid #a8700e}
+#speedR:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:6px}
 #hcv{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;z-index:9}
 #blackout{position:absolute;inset:0;z-index:8;background:#000;opacity:0;pointer-events:none;transition:opacity .4s ease}
 #blackout.on{opacity:1;pointer-events:auto}
@@ -169,6 +186,8 @@ html,body{touch-action:manipulation;-webkit-user-select:none;user-select:none;-w
     <div id="scenePick" role="group" aria-label="Scene"><button class="scene-tile" id="tile-pit" data-scene="pit" aria-label="Stage" aria-pressed="false"></button><button class="scene-tile" id="tile-room" data-scene="room" aria-label="Living room" aria-pressed="false"></button></div>
     <div id="blackout" class="on" aria-hidden="true"></div>
     <canvas id="hcv" aria-hidden="true"></canvas>
+    <p id="howto">Notes fall toward the rings.<br><span class="k">Press <b>Space ← ↓ →</b> or click a lane</span><span class="t"><b>Tap the lane</b></span> as a note hits its ring.<br>Hold long notes. Every hit makes a cat sing.</p>
+    <div id="speedCtl"><label for="speedR">NOTE SPEED <output id="speedV" for="speedR">1.0×</output></label><input type="range" id="speedR" min="0.5" max="2" step="0.1" value="1" aria-label="Note speed"></div>
     <div id="menuLive" role="status" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></div>
     <canvas id="gcv" aria-label="Lanes: Space, Left, Down, Right"></canvas>
     <button id="pauseBtn" hidden aria-label="Pause">❚❚</button>
@@ -1187,7 +1206,7 @@ function frame(){
   if(S.scene.bg==='pit'&&!S.pit.free){const o=S.pit;controls.enabled=false;
     // game framing: the tribune sits in the upper part, the notes fall below it
     const r=cv.getBoundingClientRect(),w=r.width||1,h=r.height||1,mob=window.__isMob&&window.__isMob();
-    const PF=window.PITF||(mob?{F:1.75,zoom:1.9,top:.24,back:1.2}:{F:1.6,zoom:1.5,top:.25,back:.25});
+    const PF=window.PITF||(mob?{F:1.75,zoom:1.85,top:.24,back:.9}:{F:1.6,zoom:1.5,top:.25,back:.25});
     camera.position.set(o.camX,o.camY,o.camZ+PF.back);camera.lookAt(o.camX*.2,o.lookY,0);
     const fv=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(o.fov/2))*PF.F*PF.zoom)*180/Math.PI;
     camera.fov=fv;camera.aspect=w/(PF.F*h);camera.setViewOffset(w,PF.F*h,0,PF.F*h/2-PF.top*h,w,h);camera.updateProjectionMatrix();window.__pitVO=true}
@@ -1219,6 +1238,11 @@ const NP={fall:1.7,win:.22,size:1,depth:.42,bevel:.16,pawH:.12,laneGap:3.5,tgtOp
   laneCols:['#ff5a72','#ffb23d','#3fc0ff','#a77bff'],pawCol:'#fff4e2',pawPad:'#ffd0dc',holdFrom:8};
 const HP={depth:2.2,bevel:.42,bevelT:.5,bevelSeg:2,outW:.38,outOp:.45,outCol:'#fff3a8',face:'#ffe14a',side:'#a87a10',spacing:.12,wobble:6,bounce:.25,pop:.35,idle:.4,persp:28,lightAng:35,lightI:2.2,amb:.7};
 const LANE_KEYS={Space:0,ArrowLeft:1,ArrowDown:2,ArrowRight:3};
+// note speed (pause menu slider): scales how fast the notes travel, hit timing is unchanged
+const FALL0=NP.fall;let noteSpeed=1;
+function setNoteSpeed(v){noteSpeed=Math.min(2,Math.max(.5,+v||1));NP.fall=FALL0/noteSpeed;const r=document.getElementById('speedR'),o=document.getElementById('speedV');if(r&&+r.value!==noteSpeed)r.value=noteSpeed;if(o)o.textContent=noteSpeed.toFixed(1)+'×';try{localStorage.setItem('ssp_speed',noteSpeed)}catch(e){}}
+try{const v=localStorage.getItem('ssp_speed');if(v)setNoteSpeed(v)}catch(e){}
+document.getElementById('speedR').addEventListener('input',e=>setNoteSpeed(e.target.value));setNoteSpeed(noteSpeed);
 const hull=(u)=>{const m=new THREE.MeshBasicMaterial({side:THREE.BackSide,transparent:true,depthWrite:false});m.onBeforeCompile=sh=>{sh.uniforms.uOut=u;sh.vertexShader='uniform float uOut;\n'+sh.vertexShader.replace('#include <begin_vertex>','vec3 transformed=position+normal*uOut;')};return m};
 function mergeV(g,tol){ // tiny mergeVertices: weld by rounded position (no BufferGeometryUtils import here)
   g=g.index?g.toNonIndexed():g;const p=g.attributes.position,map=new Map(),pos=[],idx=[];const k=1/tol;
@@ -1418,13 +1442,20 @@ const best=()=>{try{return +localStorage.getItem('ssp_best_'+curSong.id)||0}catc
 const setBest=v=>{try{localStorage.setItem('ssp_best_'+curSong.id,String(v))}catch(e){}};
 const now=()=>ctx?ctx.currentTime:0;
 let pauseT=null,pianoSrc=null;
+// every piano segment gets its own gain node: on pause it is muted AND disconnected, not only stop()-ed
+// (mobile Safari can ignore stop() on a source whose start is still in the future, e.g. during the countdown)
+function startPiano(when,offset){const g=ctx.createGain(),p=ctx.createBufferSource();p.buffer=pianoBuf;p.connect(g);g.connect(pianoG);
+  if(offset>0)p.start(when,offset);else p.start(when);p._g=g;pianoSrc=p}
+function killPiano(fade){const p=pianoSrc;pianoSrc=null;if(!p)return;const t=ctx.currentTime,g=p._g;
+  try{g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+fade)}catch(e){}
+  try{p.stop(t+fade+.01)}catch(e){}setTimeout(()=>{try{p.disconnect()}catch(e){}try{g.disconnect()}catch(e){}},fade*1000+60)}
 const songT=()=>pauseT!==null?pauseT:now()-T0-(ctx&&ctx.outputLatency||0);
 // pause = really stop the music (iOS/Telegram may ignore ctx.suspend); resume restarts the piano from the same spot
 function pauseAudio(){if(pauseT!==null||!ctx)return;pauseT=songT();
-  try{if(pianoSrc)pianoSrc.stop()}catch(e){}pianoSrc=null;chart.forEach(n=>{if(n.g)cutMeow(n)})}
+  killPiano(.02);chart.forEach(n=>{if(n.g)cutMeow(n)})}
 function resumeAudio(){if(pauseT===null||!ctx)return;if(ctx.state!=='running')ctx.resume().catch(()=>{});
   const lat=ctx.outputLatency||0,t=pauseT;T0=ctx.currentTime-lat-t;pauseT=null;
-  if(runG&&pianoBuf){const p=ctx.createBufferSource();p.buffer=pianoBuf;p.connect(pianoG);if(t<0)p.start(T0);else if(t<pianoBuf.duration)p.start(0,t);pianoSrc=p}}
+  if(runG&&pianoBuf){if(t<0)startPiano(T0,0);else if(t<pianoBuf.duration)startPiano(ctx.currentTime,t)}}
 const COUNT_LEAD=3.2;               // seconds of 3-2-1 + "ВАШ ВЫХОД!" before the first note
 function buildChart(){const NL=curSong.notes,six=curSong.six;
   return NL.map((n,k)=>{const t=n.s*six,isHold=n.d>=curSong.hold,nx=NL[k+1];const end=Math.min(nx?nx.s*six:1e9,t+n.d*six+.3);
@@ -1433,10 +1464,10 @@ function playMeow(n){if(!songBuf||!voiceG)return;const now=ctx.currentTime,when=
   const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=songBuf;src.connect(g).connect(voiceG);
   g.gain.setValueAtTime(0,when);g.gain.linearRampToValueAtTime(1,when+.008);g.gain.setValueAtTime(1,when+len-.07);g.gain.linearRampToValueAtTime(0,when+len);
   src.start(when,Math.max(0,n.t-pre),len+.02);n.src=src;n.g=g}
-function cutMeow(n){if(!n.g)return;const t=ctx.currentTime;n.g.gain.cancelScheduledValues(t);n.g.gain.setTargetAtTime(0,t,.03);try{n.src.stop(t+.2)}catch(e){}n.g=null}
+function cutMeow(n){if(!n.g)return;const t=ctx.currentTime;n.g.gain.cancelScheduledValues(t);n.g.gain.setTargetAtTime(0,t,.03);try{n.src.stop(t+.2)}catch(e){}const s_=n.src,g_=n.g;setTimeout(()=>{try{s_.disconnect()}catch(e){}try{g_.disconnect()}catch(e){}},260);n.g=null}
 
 function freeVis(n){if(n.v){n.v.g.visible=false;pool[n.v.lane].push(n.v);n.v=null}}
-function stopAudio(){try{if(pianoSrc)pianoSrc.stop(ctx.currentTime+.05)}catch(e){}pianoSrc=null;pauseT=null;if(runG){const g=runG;try{g.gain.setTargetAtTime(0,ctx.currentTime,.03)}catch(e){}setTimeout(()=>g.disconnect(),400);runG=null}}
+function stopAudio(){if(ctx)killPiano(.05);pauseT=null;if(runG){const g=runG;try{g.gain.setTargetAtTime(0,ctx.currentTime,.03)}catch(e){}setTimeout(()=>g.disconnect(),400);runG=null}}
 async function ensureSong(){
   initAudio();unlockAudio();
   await loadSongAudio(curSong);const B=bufs[curSong.id];songBuf=B.cats;pianoBuf=B.piano;
@@ -1486,7 +1517,7 @@ async function startRun(){
   T0=ctx.currentTime+COUNT_LEAD;runG=ctx.createGain();runG.connect(master);
   voiceG=ctx.createGain();voiceG.connect(runG);pianoG=ctx.createGain();pianoG.gain.value=.55;pianoG.connect(runG);duckUntil=0;
   // the choir track is not played as a whole: each meow is cut out of it and played only on a hit
-  pauseT=null;const p=ctx.createBufferSource();p.buffer=pianoBuf;p.connect(pianoG);p.start(T0);pianoSrc=p;
+  pauseT=null;startPiano(T0,0);
   endAt=chart.reduce((a,n)=>Math.max(a,n.t+n.dur),0)+1.4;
   phase='count';$('pauseBtn').hidden=false;syncPause();
 }
@@ -1503,7 +1534,7 @@ function release(lane){if(!down[lane])return;down[lane]=false;targets[lane].held
   for(const n of chart)if(n.lane===lane&&n.state==='hold'){if(st>=n.t+n.dur-NP.win)completeHold(n);else{n.state='broke';n.hk=0;combo=0;cutMeow(n);const c=cats[lane];if(c)setMouth(c,'closed')}}}
 function completeHold(n){n.state='done';n.hk=0;score+=10;hits++;combo++;maxCombo=Math.max(maxCombo,combo);burst(n.lane,true)}
 const typing=e=>e.target&&e.target.matches&&e.target.matches('input[type=text],textarea');
-addEventListener('keydown',e=>{if(typing(e))return;
+addEventListener('keydown',e=>{if(typing(e))return;if(menuOpen&&e.target&&e.target.id==='speedR'&&e.code.startsWith('Arrow'))return;
   if(songMenuOpen){if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Enter'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation()}
     if(e.repeat)return;const N=SONGLIST.length;
     if(e.code==='ArrowDown'||e.code==='ArrowRight')songSel=(songSel+1+N)%N;
@@ -1543,10 +1574,16 @@ function setPause(on){if(!ctx||!(phase==='play'||phase==='count')||songMenuOpen)
   if(on){if(paused)return;paused=true;for(let i=0;i<4;i++)release(i);pauseAudio();menuOpen=true;menuOpenedAt=performance.now();menuSel=-1;$('blackout').classList.add('on');$('menuLive').textContent='Paused. Resume, restart or menu.'}
   else closeMenu(()=>{paused=false;resumeAudio()});syncPause()}
 function closeMenu(after){if(!menuOpen||menuBusy)return;menuBusy=true;menuOpen=false;$('blackout').classList.remove('on');setTimeout(()=>{menuBusy=false;after()},420)}
-function openSongMenu(){if(!ctx||!(phase==='play'||phase==='count')||paused)return;paused=true;for(let i=0;i<4;i++)release(i);pauseAudio();songMenuOpen=true;songSel=-1;$('blackout').classList.add('on');$('menuLive').textContent='Choose a song'}
+function openSongMenu(){if(phase==='title'&&!songMenuOpen){songMenuOpen=true;songSel=-1;$('blackout').classList.add('on');$('menuLive').textContent='Choose a song';return}
+  if(!ctx||!(phase==='play'||phase==='count')||paused)return;paused=true;for(let i=0;i<4;i++)release(i);pauseAudio();songMenuOpen=true;songSel=-1;$('blackout').classList.add('on');$('menuLive').textContent='Choose a song'}
 function closeSongMenu(resume,after){if(!songMenuOpen||songBusy)return;songBusy=true;songMenuOpen=false;$('blackout').classList.remove('on');
   setTimeout(()=>{songBusy=false;paused=false;if(after)after();else resumeAudio()},420)}
-function chooseSong(S){if(S===curSong){closeSongMenu(true);return}closeSongMenu(false,()=>setSong(S))}
+function chooseSong(S){if(S===curSong){closeSongMenu(true);return}closeSongMenu(false,()=>phase==='title'?titleSong(S):setSong(S))}
+// title screen: just switch the song (load it behind the black screen if needed), the run starts with PLAY
+function titleSong(S){if(!S||phase!=='title')return;curSong=S;try{localStorage.setItem('ssp_song',S.id)}catch(e){}syncSongUI();
+  if(bufs[S.id]&&bufs[S.id].ready)return;
+  songLoading={p:0,done:false,play:false};phase='loading';loadShown=0;$('blackout').classList.add('on');
+  loadSongAudio(S,p=>{if(songLoading)songLoading.p=p*100}).then(()=>{if(songLoading)songLoading.done=true}).catch(e=>{console.error(e);const L=$('loading');L.classList.add('err');L.textContent='The song did not load: cats_'+S.id+'.mp3 / piano_'+S.id+'.mp3';if(songLoading)songLoading.done=true})}
 function togglePause(){if(songMenuOpen){closeSongMenu(true);return}if(menuOpen){setPause(false);return}if(phase==='play'||phase==='count')setPause(true)}
 const MENU=[{label:'RESUME',act:()=>setPause(false)},
   {label:'RESTART',act:()=>closeMenu(()=>{paused=false;if(ctx.state==='suspended')ctx.resume();startRun()})},
@@ -1632,7 +1669,7 @@ function resizeGame(){
   targets.forEach(tg=>{tg.g.position.y=TGT;tg.key.visible=tg.keyO.visible=!isMob()});
 }
 new ResizeObserver(resizeGame).observe(gcv);new ResizeObserver(resizeGame).observe(hcv);resizeGame();
-const gclock=new THREE.Clock();
+const gclock=new THREE.Clock(),_pb=new THREE.Box3();
 let gclock_dt=0;
 function gameFrame(){requestAnimationFrame(gameFrame);mobileCam();gclock_dt=Math.min(.25,gclock.getDelta());const dt=Math.min(.05,gclock_dt),t=gclock.elapsedTime;
   update(dt);animFx(paused?0:dt);
@@ -1642,7 +1679,7 @@ function gameFrame(){requestAnimationFrame(gameFrame);mobileCam();gclock_dt=Math
   // loading: black screen + 3D percent
   if(phase==='loading'){const ok=songLoading?songLoading.done:(modelsReady&&audioReady);const raw=songLoading?songLoading.p:(window.__LP?window.__LP.pct():0);const tgt=ok?100:Math.min(99,raw);loadShown+=(Math.max(loadShown,tgt)-loadShown)*Math.min(1,dt*5);
     if(ok&&tgt>=100&&loadShown>99.4){loadShown=100;const go=songLoading&&songLoading.play;phase=go?'switching':'title';songLoading=null;$('blackout').classList.remove('on');if(go)startRun()}}
-  document.body.classList.toggle('title',phase==='title');
+  document.body.classList.toggle('title',phase==='title');document.body.classList.toggle('songmenu',songMenuOpen);document.body.classList.toggle('menuopen',menuOpen);
   if((phase==='play'||phase==='count')&&!paused&&ctx&&ctx.state!=='running'&&ctx.state!=='closed')ctx.resume().catch(()=>{});
   loadLine.set(Math.floor(loadShown)+'%');
   // score sits above the notes strip, turned a little sideways
@@ -1655,8 +1692,8 @@ function gameFrame(){requestAnimationFrame(gameFrame);mobileCam();gclock_dt=Math
   const stopY=toY(sb.top),MOB=isMob();
   if(MOB||document.body.classList.contains('pitlay')){const ms=Math.min(.2,hw*2*.42/Math.max(scoreLine.w,4*6+3*HP.spacing*6));scoreLine.place(-hw+hw*.06+scoreLine.w*ms/2,hh-5*ms-hh*.05,ms,-8,-4,showScore&&!b.text?1:0,30)}
   else scoreLine.place(toX(sb.left)+scoreLine.w*ssc/2,Math.min(hh-5*ssc-hh*.015,stopY+5*ssc+hh*.12),ssc,-8,-4,showScore&&!b.text?1:0,34);
-  {const tk=(phase==='play'||phase==='count')&&!menuOpen&&!songMenuOpen&&menuK<.3&&songK<.3?1:0;pick.k+=(tk-pick.k)*Math.min(1,dt*6);const pk=pick.k<.01?0:pick.k;
-    const ts=Math.min(MOB?.14:.13,hw*2*(MOB?.46:.26)/Math.max(pick.title.w,30)),cs=ts*1.15,half=pick.title.w*ts/2+7*cs,y=MOB?toY(sb.top-sb.height*.01):hh-6*ts-hh*.06;
+  {const tk=(phase==='play'||phase==='count'||phase==='title')&&!menuOpen&&!songMenuOpen&&menuK<.3&&songK<.3?1:0;pick.k+=(tk-pick.k)*Math.min(1,dt*6);const pk=pick.k<.01?0:pick.k;
+    const ts=Math.min(MOB?.14:.13,hw*2*(MOB?.46:.26)/Math.max(pick.title.w,30)),cs=ts*1.15,half=pick.title.w*ts/2+7*cs,y=phase==='title'?(MOB?toY(Math.max(hb.top+20,$('scenePick').getBoundingClientRect().bottom)+18)-5*ts:hh-6*ts-hh*.06):MOB?toY(sb.top-sb.height*.01):hh-6*ts-hh*.06;
     for(const k of ['title','prev','next']){const on=pick.hov==='title'||pick.hov==='next';pick.sat[k]+=((on?1:.65)-pick.sat[k])*Math.min(1,dt*10);
       const M=pick[k].mats;for(const c of ['face','side','out']){const base=new THREE.Color(c==='face'?HP.face:c==='side'?HP.side:HP.outCol);M[c].color.copy(_gry(base)).lerp(base,pick.sat[k])}M.glow.color.copy(M.out.color);pick[k].anim(dt,t+(k==='prev'?1:k==='next'?2:0))}
     const bob=Math.sin(t*1.4)*hh*.006;
@@ -1669,11 +1706,17 @@ function gameFrame(){requestAnimationFrame(gameFrame);mobileCam();gclock_dt=Math
   document.body.classList.toggle('pitlay',S.scene.bg==='pit'&&phase!=='title'&&phase!=='loading');
 
   // title: big ИГРАТЬ where the score lives
-  {const tk=phase==='title'?1:0;playLine.k=(playLine.k||0)+(tk-(playLine.k||0))*Math.min(1,dt*6);playSat+=((playHov?1:.65)-playSat)*Math.min(1,dt*10);
+  {const tk=phase==='title'&&!songMenuOpen&&songK<.3?1:0;playLine.k=(playLine.k||0)+(tk-(playLine.k||0))*Math.min(1,dt*6);playSat+=((playHov?1:.65)-playSat)*Math.min(1,dt*10);
     for(const k of ['face','side','out']){const c=new THREE.Color(k==='face'?HP.face:k==='side'?HP.side:HP.outCol);pbMats[k].color.copy(_gry(c)).lerp(c,playSat)}pbMats.glow.color.copy(pbMats.out.color);
-    const psc2=Math.min(.5,stripW*1.15/playLine.w),bob=Math.sin(t*1.6)*hh*.012;playLine.anim(dt,t);
+    const psc2=Math.min(.5,stripW*1.15/playLine.w,hw*2*.25/playLine.w),bob=Math.sin(t*1.6)*hh*.012;playLine.anim(dt,t);
     const pmob=MOB?Math.min(.4,hw*2*.7/playLine.w):psc2;
-    playLine.place(MOB?0:toX(sb.left)+playLine.w*psc2/2,MOB?toY(sb.top+sb.height*.22)+bob:Math.min(hh-5*psc2-hh*.03,stopY+5*psc2+hh*.1)+bob,pmob,-8,-4,playLine.k<.01?0:playLine.k*(1+playHov*.06+Math.sin(t*3)*.015),MOB?0:34)}
+    {const px=MOB?0:-hw+hw*.07+playLine.w*psc2/2,py=MOB?toY(sb.top+sb.height*.22)+bob:hh*.36+bob,R=180/Math.PI;
+    // face the camera so the word reads straight (no side of the extrusion showing off-centre)
+    playLine.place(px,py,pmob,Math.atan(py/60)*R,0,playLine.k<.01?0:playLine.k*(1+playHov*.06+Math.sin(t*3)*.015),Math.atan(-px/60)*R)}
+    if(phase==='title'){playLine.root.updateMatrixWorld(true);_pb.setFromObject(playLine.root);let nx=9,ny=9;const v=new THREE.Vector3();
+      for(let i=0;i<8;i++){v.set(i&1?_pb.max.x:_pb.min.x,i&2?_pb.max.y:_pb.min.y,i&4?_pb.max.z:_pb.min.z).project(hcam);nx=Math.min(nx,v.x);ny=Math.min(ny,v.y)}
+      const H=$('howto'),L=hb.left+(nx+1)/2*hb.width,B=hb.top+(1-ny)/2*hb.height;
+      if(nx>-5&&isFinite(L)){H.style.left=Math.max(16,Math.round(L+(MOB?4:10)))+'px';H.style.top=Math.round(B+(MOB?14:10))+'px';H.classList.add('ready')}}}
   {const lk=phase==='loading'?1:0;loadLine.k=(loadLine.k??1)+(lk-(loadLine.k??1))*Math.min(1,dt*6);loadLine.anim(dt,t);const lsc=Math.min(.6,hw*2*.32/Math.max(loadLine.w,20));loadLine.place(0,0,lsc,-8,-3,loadLine.k<.01?0:loadLine.k,0)}
   // results: black screen, score + record, ЗАКРЫТЬ like the menu items
   const vf=MOB?Math.min(1,hw/hh*1.25):1;
@@ -1714,7 +1757,7 @@ const pauseBtn3d={sc:.2,hov:0};{const ray=new THREE.Raycaster(),m=new THREE.Vect
   const box=new THREE.Box3();
   const menuHit=e=>{if(!menuOpen||menuK<.6)return -1;const r=hcv.getBoundingClientRect();m.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(m,hcam);
     for(let i=0;i<menuItems.length;i++){box.setFromObject(menuItems[i].ln.root);box.expandByScalar(.6);if(ray.ray.intersectsBox(box))return i}return -1};
-  const pickHit=e=>{if(!(phase==='play'||phase==='count')||paused||menuOpen||pick.k<.6)return '';const r=hcv.getBoundingClientRect();m.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(m,hcam);
+  const pickHit=e=>{if(!(phase==='play'||phase==='count'||phase==='title')||paused||menuOpen||songMenuOpen||pick.k<.6)return '';const r=hcv.getBoundingClientRect();m.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(m,hcam);
     for(const k of ['next','title']){box.setFromObject(pick[k].root);box.expandByScalar(k==='title'?.4:1.4);if(ray.ray.intersectsBox(box))return k}return ''};
   addEventListener('pointerdown',e=>{const k=pickHit(e);if(!k)return;e.preventDefault();e.stopPropagation();pick.next.slots.forEach(s=>s.pop=1);openSongMenu()},{capture:true});
   const songHit=e=>{if(!songMenuOpen||songK<.6)return -1;const r=hcv.getBoundingClientRect();m.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(m,hcam);
@@ -1723,12 +1766,12 @@ const pauseBtn3d={sc:.2,hov:0};{const ray=new THREE.Raycaster(),m=new THREE.Vect
   addEventListener('pointerdown',e=>{if(!songMenuOpen)return;e.preventDefault();e.stopPropagation();songDown=songK>.6?songHit(e):-2;if(songDown>=0)songSel=songDown},{capture:true});
   addEventListener('pointerup',e=>{if(!songMenuOpen||songDown===-2)return;const i=songHit(e);if(i>=0&&i===songDown){songSel=i;chooseSong(SONGLIST[i])}else if(i<0&&songDown===-1)closeSongMenu(true);songDown=-2},{capture:true});
   addEventListener('pointermove',e=>{if(!songMenuOpen)return;const i=songHit(e);songSel=i;document.body.style.cursor=i>=0?'pointer':''},{capture:true});
-  const playHit=e=>{if(phase!=='title'||!playLine.root.visible)return false;const r=hcv.getBoundingClientRect();m.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(m,hcam);box.setFromObject(playLine.root);box.expandByScalar(.6);return ray.ray.intersectsBox(box)};
+  const playHit=e=>{if(phase!=='title'||songMenuOpen||!playLine.root.visible||playLine.k<.6)return false;const r=hcv.getBoundingClientRect();m.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(m,hcam);box.setFromObject(playLine.root);box.expandByScalar(.6);return ray.ray.intersectsBox(box)};
   addEventListener('pointerdown',e=>{if(playHit(e)){e.preventDefault();e.stopPropagation();playLine.slots.forEach(s=>s.pop=1);startRun()}},{capture:true});
   const closeHit=e=>{if(!resOpen||resK<.6)return false;const r=hcv.getBoundingClientRect();m.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(m,hcam);box.setFromObject(resClose.root);box.expandByScalar(.6);return ray.ray.intersectsBox(box)};
   addEventListener('pointerdown',e=>{if(!resOpen)return;e.preventDefault();e.stopPropagation();if(closeHit(e))closeResults()},{capture:true});
   let menuDown=-1;
-  addEventListener('pointerdown',e=>{if(!menuOpen)return;e.preventDefault();e.stopPropagation();menuDown=performance.now()-menuOpenedAt>350?menuHit(e):-1;if(menuDown>=0)menuSel=menuDown},{capture:true});
+  addEventListener('pointerdown',e=>{if(!menuOpen||(e.target.closest&&e.target.closest('#speedCtl')))return;e.preventDefault();e.stopPropagation();menuDown=performance.now()-menuOpenedAt>350?menuHit(e):-1;if(menuDown>=0)menuSel=menuDown},{capture:true});
   addEventListener('pointerup',e=>{if(!menuOpen||menuDown<0)return;const i=menuHit(e);if(i===menuDown){menuSel=i;MENU[i].act()}menuDown=-1},{capture:true});
   addEventListener('pointermove',e=>{if(resOpen){closeHov=closeHit(e)?1:0;document.body.style.cursor=closeHov?'pointer':'';return}pick.hov=pickHit(e);if(pick.hov){playHov=0;document.body.style.cursor='pointer';return}if(phase==='title'){playHov=playHit(e)?1:0;document.body.style.cursor=playHov?'pointer':'';return}playHov=0;if(menuOpen){const i=menuHit(e);menuSel=i;document.body.style.cursor=i>=0?'pointer':'';return}const h=hit(e);pauseBtn3d.hov=h?1:0;document.body.style.cursor=h?'pointer':''})}
 
@@ -1814,7 +1857,7 @@ window.__grabPreview=k=>new Promise(res=>{let n=0;const tick=()=>{if(++n<4){requ
     $('tile-'+k).style.backgroundImage=`url(${o.toDataURL('image/jpeg',.85)})`}catch(e){console.error(e)}res()};};requestAnimationFrame(tick)});
 
 gameFrame();
-window.__game={get paused(){return paused},get pianoOn(){return !!pianoSrc},get chart(){return chart},get score(){return score},get phase(){return phase},press,release,startRun,songT};
+window.__game={get fall(){return NP.fall},get paused(){return paused},get pianoOn(){return !!pianoSrc},get chart(){return chart},get score(){return score},get phase(){return phase},press,release,startRun,songT};
 }
 
 buildInkRoom();buildPit();applyPitLight();applyScene();syncs.forEach(f=>f());selectCat(0);
